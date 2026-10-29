@@ -1,0 +1,24 @@
+# Environment secrets (DO NOT COMMIT)
+.env
+.env.*
+.streamlit/secrets.toml
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Python cache & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+
+# Vector database storage & FAISS local index
+faiss_store_gemini/
+*.pkl
+*.faiss
+
+# IDE settings
+.vscode/
+.idea/
