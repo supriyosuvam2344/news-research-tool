@@ -14,8 +14,12 @@ CHAT_MODEL = "gemini-2.5-flash"
 EMBED_MODEL = "gemini-embedding-001"
 INDEX_DIR = "faiss_store_gemini"
 
-# Automatically picks up GEMINI_API_KEY from the environment
-client = genai.Client()
+# Look for GEMINI_API_KEY in local .env or Streamlit Cloud Secrets
+api_key = os.environ.get("GEMINI_API_KEY")
+if not api_key and hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
+    api_key = st.secrets["GEMINI_API_KEY"]
+
+client = genai.Client(api_key=api_key)
 
 class GeminiEmbeddings(Embeddings):
     """Adapts Google GenAI embedding endpoints for LangChain's FAISS."""
@@ -56,11 +60,18 @@ if process_url_clicked:
     else:
         try:
             status_placeholder.info("Data Loading... Started... ⏳")
-            loader = UnstructuredURLLoader(urls=cleaned_urls)
+            
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+            loader = UnstructuredURLLoader(urls=cleaned_urls, headers=headers)
             data = loader.load()
 
-            if not data:
-                st.sidebar.error("Could not extract readable text from the provided URLs.")
+            valid_docs = [doc for doc in data if len(doc.page_content.strip()) > 100]
+
+            if not valid_docs:
+                status_placeholder.empty()
+                st.sidebar.error("Could not extract readable text. The websites may be blocking cloud requests.")
             else:
                 status_placeholder.info("Splitting text into chunks... ✂️")
                 splitter = RecursiveCharacterTextSplitter(
@@ -68,7 +79,7 @@ if process_url_clicked:
                     chunk_size=1000,
                     chunk_overlap=200,
                 )
-                docs = splitter.split_documents(data)
+                docs = splitter.split_documents(valid_docs)
 
                 status_placeholder.info("Generating embeddings and building FAISS index... ⚙️")
                 vectorstore = FAISS.from_documents(docs, embeddings)
