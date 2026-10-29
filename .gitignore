@@ -22,6 +22,3 @@ faiss_store_gemini/
 # IDE settings
 .vscode/
 .idea/
-
-# Tutorial notebooks and sample data
-notebooks/

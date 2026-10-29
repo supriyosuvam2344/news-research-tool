@@ -1,8 +1,8 @@
 # News Research Tool 📈
 
-RockyBot is a user-friendly news research tool designed for effortless information retrieval. Users can input article URLs and ask questions to receive grounded, relevant insights and summaries based strictly on the provided articles.
+News Research Tool is a user-friendly tool designed for effortless information retrieval. Users can input article URLs and ask questions to receive grounded, relevant insights and summaries based strictly on the provided articles.
 
-![](rockybot.png)
+![](image.png)
 
 ## Features
 
