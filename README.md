@@ -18,12 +18,16 @@ RockyBot is a user-friendly news research tool designed for effortless informati
 
 ### 1. Clone the repository
 ```bash
-git clone [https://github.com/codebasics/langchain.git](https://github.com/codebasics/langchain.git)
+## Installation
+
+### 1. Clone the repository
+```bash
+git clone [https://github.com/supriyosuvam2344/news-research-tool.git](https://github.com/supriyosuvam2344/news-research-tool.git)
 ```
 ### 2. Navigate to the project directory
 
 ```bash
-cd 2_news_research_tool_project
+cd news-research-tool
 ```
 ### 3. Create and activate a virtual environment
 
