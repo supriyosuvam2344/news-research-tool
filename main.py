@@ -5,16 +5,16 @@ from google import genai
 from google.genai import types
 from langchain.embeddings.base import Embeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import UnstructuredURLLoader
+from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.vectorstores import FAISS
 
-load_dotenv()  # Reads GEMINI_API_KEY from .env
+load_dotenv()  # Reads GEMINI_API_KEY from .env locally
 
 CHAT_MODEL = "gemini-2.5-flash"
 EMBED_MODEL = "gemini-embedding-001"
 INDEX_DIR = "faiss_store_gemini"
 
-# Look for GEMINI_API_KEY in local .env or Streamlit Cloud Secrets
+# Retrieve API key from local environment or Streamlit Cloud Secrets
 api_key = os.environ.get("GEMINI_API_KEY")
 if not api_key and hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
     api_key = st.secrets["GEMINI_API_KEY"]
@@ -26,7 +26,6 @@ class GeminiEmbeddings(Embeddings):
 
     def _embed(self, texts, task_type):
         vectors = []
-        # Batch requests to stay safely within rate limits
         for i in range(0, len(texts), 50):
             batch = texts[i : i + 50]
             response = client.models.embed_content(
@@ -61,17 +60,21 @@ if process_url_clicked:
         try:
             status_placeholder.info("Data Loading... Started... ⏳")
             
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            }
-            loader = UnstructuredURLLoader(urls=cleaned_urls, headers=headers)
+            # WebBaseLoader safely passes browser headers without throwing kwargs errors
+            loader = WebBaseLoader(
+                web_paths=cleaned_urls,
+                header_template={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                }
+            )
             data = loader.load()
 
+            # Ensure retrieved pages contain readable text
             valid_docs = [doc for doc in data if len(doc.page_content.strip()) > 100]
 
             if not valid_docs:
                 status_placeholder.empty()
-                st.sidebar.error("Could not extract readable text. The websites may be blocking cloud requests.")
+                st.sidebar.error("Could not extract readable text from the provided URLs.")
             else:
                 status_placeholder.info("Splitting text into chunks... ✂️")
                 splitter = RecursiveCharacterTextSplitter(
@@ -97,7 +100,6 @@ if query:
         st.warning("Please process at least one URL before querying.")
     else:
         try:
-            # allow_dangerous_deserialization is required for local pickle loading in LangChain
             vectorstore = FAISS.load_local(
                 INDEX_DIR, 
                 embeddings, 
@@ -105,10 +107,7 @@ if query:
             )
             docs = vectorstore.similarity_search(query, k=4)
 
-            context = "\n\n".join(
-                f"\n{d.page_content}"
-                for d in docs
-            )
+            context = "\n\n".join(f"\n{d.page_content}" for d in docs)
 
             prompt = (
                 "Answer the question using ONLY the article excerpts below. "
